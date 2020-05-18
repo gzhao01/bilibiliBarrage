@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>ECharts</title>
+    <!-- including ECharts file -->
+    <script src="{{ url_for('static', filename='echarts.js') }}"></script>
+    <script src="../static/jquery-3.5.1.min.js"></script>
+</head>
+<body>
+    <!-- prepare a DOM container with width and height -->
+    <div id="densityCount" style="width: 1000px;height:400px;"></div>
+    <div id="wordCount" style="width: 1000px;height:400px;"></div>
+    <div style="width: 1000px;height:400px;">
+      <img src="../static/img/bilibili_BV1zC4y1s7RW.jpg" alt="">
+    </div>
+    <script type="text/javascript">
+        // based on prepared DOM, initialize echarts instance
+        var myChart = echarts.init(document.getElementById('densityCount'));
+        // specify chart configuration item and data
+        var option = {
+            title: {
+                text: 'bilibili弹幕统计'
+            },
+            tooltip: {},
+            legend: {
+                data:['时间']
+            },
+            xAxis: {
+                data: ['a']
+            },
+            yAxis: {},
+            series: [{
+                name: '时间',
+                type: 'line',
+                data: [1]
+            }]
+        };
+        myChart.setOption(option);
+        // get density of barriage data
+        $.ajax({
+         type : "get",
+//       async : true,            //异步请求（同步请求将会锁住浏览器，用户其他操作必须等待请求完成才可以执行）
+         url : "http://127.0.0.1:5000/getdensity",    //请求发送到Servlet处
+//       data : {},
+         dataType : "json",        //返回数据形式为json
+         success : function(result) {
+             //请求成功时执行该函数内容，result即为服务器返回的json对象
+             if (result) {
+               var count_keys = [];
+               var count_vals = [];
+               for(var val in result){
+                var time = MillisecondToDate(val)
+                count_keys.push(time);
+                count_vals.push(result[val]);
+               }
+//           	alert(result["data"]);
+                myChart.hideLoading();    //隐藏加载动画
+                myChart.setOption({        //加载数据图表
+                    xAxis: {
+                        data: count_keys
+                    },
+                    yAxis: {},
+                    toolbox: {                   
+                        show: true,                  
+                        feature: 
+                        {                     
+                          dataZoom:
+                          {                        
+                            realtime: false,                         
+                            yAxisIndex: 'none',                      
+                          },                    
+                          restore: {},                   
+                        }            
+                      },               
+                      dataZoom: 
+                      [
+                        {type: 'inside'},        //用于添加滚轮缩放
+                        {type:'slider' },  //用于添加滑动条缩放，
+                      ],            
+                    series: [{
+                        // 根据名字对应到相应的系列
+                        name: '时间',
+                        type: 'line',
+                        data: count_vals,
+                        markPoint : {
+                          data : [
+                              {type : 'max', name: '最大值'},
+                              {type : 'min', name: '最小值'}
+                                ]
+                          },
+                        markLine : {
+                            data : [
+                                {type : 'average', name: '平均值'}
+                            ]
+                        },
+                    }]
+                });
+             }
+        },
+         error : function(errorMsg) {
+             //请求失败时执行该函数
+         alert("图表请求数据失败!");
+         console.log(errorMsg);
+         myChart.hideLoading();
+         }
+    })
+    // change seconds to date time
+    function MillisecondToDate(time) {
+    if (null != time && "" != time) {
+        if (time > 60 && time < 60 * 60) {
+            time = parseInt(time / 60.0) + "分钟" + parseInt((parseFloat(time / 60.0) -
+                parseInt(time / 60.0)) * 60) + "秒";
+        }
+        else if (time >= 60 * 60 && time < 60 * 60 * 24) {
+            time = parseInt(time / 3600.0) + "小时" + parseInt((parseFloat(time / 3600.0) -
+                parseInt(time / 3600.0)) * 60) + "分钟" +
+                parseInt((parseFloat((parseFloat(time / 3600.0) - parseInt(time / 3600.0)) * 60) -
+                parseInt((parseFloat(time / 3600.0) - parseInt(time / 3600.0)) * 60)) * 60) + "秒";
+        }
+        else {
+            time = parseInt(time) + "秒";
+        }
+    }
+    return time;
+}
+    //get word count
+    var wordCountChart = echarts.init(document.getElementById('wordCount'));
+    var option = {
+            title: {
+                text: 'top10弹幕'
+            },
+            tooltip: {},
+            legend: {
+                data:['弹幕']
+            },
+            xAxis: {
+                data: ['a']
+            },
+            yAxis: {},
+            series: [{
+                name: '数量',
+                type: 'bar',
+                data: [1]
+            }]
+        };
+
+      $.ajax({
+         type : "get",
+//       async : true,            //异步请求（同步请求将会锁住浏览器，用户其他操作必须等待请求完成才可以执行）
+         url : "http://127.0.0.1:5000/getWordCount",    //请求发送到Servlet处
+//       data : {},
+         dataType : "json",        //返回数据形式为json
+         success : function(result) {
+             //请求成功时执行该函数内容，result即为服务器返回的json对象
+             if (result) {
+                var count_keys = [];
+                var count_vals = [];
+                for(var val in result){
+                  count_keys.push(val);
+                  count_vals.push(result[val]);
+                }
+                wordCountChart.hideLoading();    //隐藏加载动画
+                wordCountChart.setOption({        //加载数据图表
+                    xAxis: {
+                        data: count_keys
+                    },
+                    yAxis: {},
+                    toolbox: {                   
+                        show: true,                  
+                        feature: 
+                        {                     
+                          dataZoom:
+                          {                        
+                            realtime: false,                         
+                            yAxisIndex: 'none',                      
+                          },                    
+                          restore: {},                   
+                        }            
+                      },               
+                      dataZoom: 
+                      [
+                        {type: 'inside'},        //用于添加滚轮缩放
+                        {type:'slider' },  //用于添加滑动条缩放，
+                      ],            
+                    series: [{
+                        // 根据名字对应到相应的系列
+                        name: '数量',
+                        type: 'bar',
+                        data: count_vals,
+                        markPoint : {
+                          data : [
+                              {type : 'max', name: '最大值'},
+                              {type : 'min', name: '最小值'}
+                                ]
+                          },
+                        markLine : {
+                            data : [
+                                {type : 'average', name: '平均值'}
+                            ]
+                        },
+                    }]
+                });
+             }
+        },
+         error : function(errorMsg) {
+             //请求失败时执行该函数
+         alert("图表请求数据失败!");
+         console.log(errorMsg);
+         wordCountChart.hideLoading();
+         }
+    })
+    </script>
+</body>
+</html>
