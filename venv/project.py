@@ -36,7 +36,11 @@ def index():
 #get density of barraige
 @app.route("/getdensity", methods = ['GET'])
 def getDensity():
-  bili=b.Bilibili('BV1zC4y1s7RW',2)
+  #get the sending index
+  bv = request.args['bv']
+  p_num = request.args['p_num']
+  #init
+  bili=b.Bilibili(bv,p_num)
   content = json.dumps(bili.count_per5sec())
   resp = Response_headers(content)
   return resp
@@ -44,15 +48,38 @@ def getDensity():
 #get wordcCount and wordCloud
 @app.route("/getWordCount", methods = ['GET'])
 def getWordCount():
-  bili=b.Bilibili('BV1zC4y1s7RW',2)
+  #get the sending index
+  bv = request.args['bv']
+  p_num = request.args['p_num']
+  bili=b.Bilibili(bv,p_num)
   #generate word cloud img
-  bili.makeWordCloud_jieba()
+  # bili.makeWordCloud_jieba()
   #word count
   barrage = bili.get_barrage_count()
   top10_barrage = {}
-  for i in range(10):
-    top10_barrage[barrage[i][0]] = barrage[i][1]
+  #if barrages less than 10
+  if len(barrage) < 10:
+    for i in barrage:
+      top10_barrage[i[0]] = i[1]
+  else:
+    # 0~9 which contains ten word
+    # should not be 10!!!!!!!!
+    for i in range(9):
+      top10_barrage[barrage[i][0]] = barrage[i][1]
   content = json.dumps(top10_barrage)
   resp = Response_headers(content)
   print(resp)
+  return resp
+
+@app.route("/getWordCloud", methods = ['GET'])
+def getWordCloud():
+  #get the sending in index
+  bv = request.args['bv']
+  p_num = request.args['p_num']
+  bili = b.Bilibili(bv,p_num)
+  wordList = bili.getWordCloud_jieba()
+  #返回的词数量
+  wordList = wordList[0:99]
+  wordData = json.dumps(wordList)
+  resp = Response_headers(wordData)
   return resp

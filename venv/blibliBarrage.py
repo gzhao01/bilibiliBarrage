@@ -3,6 +3,7 @@ import re
 import requests
 import time
 import jieba
+import jieba.analyse
 import numpy as np
 import cv2 as cv
 import matplotlib.pyplot as plt
@@ -75,7 +76,7 @@ class Bilibili():
       #if succeed
       if response.status_code == 200:
         response.encoding = response.apparent_encoding
-        with open(r'venv/static/data/bilibili.xml','wb') as f:
+        with open(r'static/data/bilibili.xml','wb') as f:
           f.write(response.content)
           print("get page suc")
         return True
@@ -89,7 +90,7 @@ class Bilibili():
     if self.barrage_result:
       print(self.barrage_result)
       tag_string=[]
-      with open(r'venv/static/data/bilibili.xml','r',encoding="utf-8") as xmlText:
+      with open(r'static/data/bilibili.xml','r',encoding="utf-8") as xmlText:
         xml=bs(xmlText,'html.parser')
         results=xml.select("d")
         #add tags
@@ -115,7 +116,7 @@ class Bilibili():
     barrage_dic = list(barrage_dic.items())
     barrage_dic.sort(key=lambda x:x[1],reverse=True)
     return barrage_dic
-  #make wordCloud  
+  #make wordCloud with jieba to be an image
   def makeWordCloud_jieba(self):
     txt = []
     #去掉感叹词
@@ -133,7 +134,7 @@ class Bilibili():
     txt=' '.join(txt)#should be ' '(a space) but not ''(with no sapce)
     w=wc(height=700, width=1000, font_path="msyh.ttc",max_words=2000)
     w.generate(txt)
-    w.to_file(r'venv/static/img/bilibili_'+self.bv + '.jpg')
+    w.to_file(r'static/img/bilibili_'+self.bv + '.jpg')
   def makeWordCloud_nojieba(self):
     txt = []
     barrages=self.get_parse_page()
@@ -144,12 +145,47 @@ class Bilibili():
     txt=' '.join(barrages)
     w=wc(height=700, width=1000, font_path="msyh.ttc",max_words=10)
     w.generate(txt)
-    w.to_file(r'venv/static/img/bilibili_'+self.bv +'_nojieba' + '.jpg')
+    w.to_file(r'static/img/bilibili_'+self.bv +'_nojieba' + '.jpg')
+  #get word cloud with jieba
+  def getWordCloud_jieba(self):
+    txt = []
+    #去掉感叹词
+    exclude_words=['【','】',',','.','?','!','。']
+    barrages=self.get_parse_page()
+    for barrage in barrages:
+      # for exclude_word in exclude_words:
+      #   barrage="".join(barrage.split(exclude_word))
+      txt.append(barrage)
+    #从数组转化成一个字符串
+    txt=''.join(txt)
+    #
+    tags = jieba.analyse.extract_tags(txt, topK=100, withWeight=True)
+    #store the list of temp_dic
+    count_list = []
+    for i in tags:
+      temp_dic = {}
+      temp_dic["name"] = i[0]
+      temp_dic["value"] = int(i[1]*100000)
+      count_list.append(temp_dic)
+    return count_list
+    #=========词语的切割统计=============
+    # #切割字符串,成为一个字符列表
+    # txt=jieba.lcut(txt)
+    # count_dic = {}
+    # for i in txt:
+    #   count_dic[i] = count_dic.get(i,0)+1
+    # count_list = []
+    # for i in count_dic:
+    #   temp_dic = {}
+    #   temp_dic["name"] = i
+    #   temp_dic["value"] = count_dic[i]
+    #   count_list.append(temp_dic)
+    # return count_list
 
   #统计每5秒的弹幕密度
   def count_per5sec(self):
     if self.barrage_result:
-      with open(r'venv/static/data/bilibili.xml','r',encoding="utf-8") as xmlText:
+      with open(r'static/data/bilibili.xml','r',encoding="utf-8") as xmlText:
           xml = bs(xmlText, 'html.parser')
           find_time = re.findall('p="(.+?),.*?"',str(xml))
           #change the string to float
